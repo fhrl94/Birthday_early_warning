@@ -1,9 +1,8 @@
-
 # 导入:
 import sqlite3
 
 import sys
-from sqlalchemy import Column, create_engine, Date, BOOLEAN, String, Integer
+from sqlalchemy import Column, create_engine, Date, String, Integer
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -17,23 +16,83 @@ Base = declarative_base()
 # 连接数据库
 session = DBSession()
 
-# TODO 定义表（职员表、职位关系表）详见active中的 create_table 函数
-# TODO 转存表（员工姓名、工号、主管、主管1、经理、经理1、总监、部门第一负责人、总经理）），分周转存表、月转存表
+#  定义表（职员表、职位关系表）详见active中的 create_table 函数
 # 定义User对象:
 class EmployeeInfo(Base):
     # 表的名字:
     __tablename__ = 'EmployeeInfo'
-
+    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
     # 表的结构:
     id = Column(Integer(), primary_key=True)
     name = Column(String(20))
     code = Column(String(10))
-    enterdate = Column(Date())
-    Divisiondates = Column(Date())
     birthDate = Column(Date())
-    Tel = Column(String(11))
-    leaveDate = Column(Date())
-    Cover = Column(Integer())
+    positionID = Column(String(36))
+    job = Column(Integer())
+
+    def __str__(self):
+        return self.name
+
+
+#  上下级关系表
+class Relation(Base):
+    # 表的名字:
+    __tablename__ = 'Relation'
+    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    # 表的结构:
+    id = Column(Integer(), primary_key=True)
+    positionID = Column(String(36))
+    parentID = Column(String(36))
+
+    def __str__(self):
+        return self.name
+
+
+#  转存表（员工姓名、工号、出生日期、职位ID、职务、主管、主管1、经理、经理1、总监、部门第一负责人、总经理）），分周转存表、月转存表
+class WeekMapping(Base):
+    # 表的名字:
+    __tablename__ = 'WeekMapping'
+    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    # 表的结构:
+    id = Column(Integer(), primary_key=True)
+    name = Column(String(20))
+    code = Column(String(10))
+    birthDate = Column(Date())
+    positionID = Column(String(36))
+    duty = Column(Integer())
+    date = Column(Date())
+    count = Column(Integer())
+    director = Column(String(20))
+    director1 = Column(String(20))
+    manager = Column(String(20))
+    manager1 = Column(String(20))
+    majordomo = Column(String(20))
+    principal = Column(String(20))
+    general_manager = Column(String(20))
+
+    def __str__(self):
+        return self.name
+
+class MonthMapping(Base):
+    # 表的名字:
+    __tablename__ = 'MonthMapping'
+    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    # 表的结构:
+    id = Column(Integer(), primary_key=True)
+    name = Column(String(20))
+    code = Column(String(10))
+    birthDate = Column(Date())
+    positionID = Column(String(36))
+    duty = Column(Integer())
+    date = Column(Date())
+    count = Column(Integer())
+    director = Column(String(20))
+    director1 = Column(String(20))
+    manager = Column(String(20))
+    manager1 = Column(String(20))
+    majordomo = Column(String(20))
+    principal = Column(String(20))
+    general_manager = Column(String(20))
 
     def __str__(self):
         return self.name
@@ -44,4 +103,3 @@ Base.metadata.create_all(engine)
 
 def stoneobject():
     return session
-
