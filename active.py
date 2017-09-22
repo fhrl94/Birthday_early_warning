@@ -1,6 +1,7 @@
 
 import datetime
 
+from sqlalchemy import text
 
 from emailtool import send
 import time
@@ -34,7 +35,7 @@ def create_table(stone):
     join ORG_Job as oj on op.JobID=oj.ID
     where Status =1 and ope.IsPrimary=1"""
     cur.execute(sql)
-    empcols = ['code', 'name', 'birthDate', 'positionID', 'job']
+    empcols = ['name', 'code', 'birthDate', 'positionID', 'job']
     for one in cur.fetchall():
         empinfo = EmployeeInfo()
         for count, col in enumerate(empcols):
@@ -42,11 +43,6 @@ def create_table(stone):
                 setattr(empinfo, col, str(one[count]))
             else:
                 setattr(empinfo, col, one[count])
-        # empinfo.name = one[0]
-        # empinfo.code = one[1]
-        # empinfo.birthDate = one[2]
-        # empinfo.positionID = one[3]
-        # empinfo.job = one[4]
         stone.add(empinfo)
     stone.commit()
     #  转存（存在的岗位） 职位表 当前职位ID，父级职位ID
@@ -67,9 +63,86 @@ def create_table(stone):
 
 # 数据转存
 # 将指定日期期间的人员放入 转存表 的表头，通过迭代获取相应的上级
-def unloading():
-    # TODO 日期处理迭代（可用函数实现），将时间区域的人转存到 月转存表 或 周转存表
-    # TODO 上级获取迭代（可用函数实现）
+# TODO 兼职人员处理
+def unloading(stone, today, afterday, number, table):
+    """
+
+    :param stone: 数据库连接
+    :param today:  当前日期
+    :param afterday:  预警日期与当前日期相差天数
+    :param number:  预警的周期天数
+    :param table:  存储表
+    :return:
+    """
+    #  日期处理迭代（可用函数实现），将时间区域的人转存到 月转存表 或 周转存表
+    today = today + datetime.timedelta(days=afterday)
+    for num in range(number):
+        result = stone.query(EmployeeInfo).filter(
+            text("strftime('%m%d',DATE (birthDate,'1 day'))=strftime('%m%d',date(:date,:value)) ")).params(
+            value='{num} day'.format(num=num + 1), date=today).all()
+        for one in result:
+            # print(one)
+            tab = table()
+            # 处理后缀数值
+            try:
+                int(one.name[len(one.name)-1])
+                tab.name = one.name[:len(one.name)-1]
+            except ValueError:
+                tab.name = one.name
+            tab.code = one.code
+            tab.birthDate = one.birthDate
+            tab.positionID = one.positionID
+            tab.job = one.job
+            tab.date = today + datetime.timedelta(days=num)
+            tab.count = 0
+            tab.director = None
+            tab.director1 = None
+            tab.manager = None
+            tab.manager1 = None
+            tab.majordomo = None
+            tab.principal = None
+            tab.general_manager = None
+            stone.add(tab)
+        stone.commit()
+    #  上级获取迭代（可用函数实现）
+    result = stone.query(table).all()
+    for one in result:
+        position = one.positionID
+        director = []
+        manager = []
+        majordomo = []
+        principal = []
+        parent = stone.query(Relation).filter(Relation.positionID == position).one_or_none()
+        while parent:
+            position = parent.parentID
+            parent = stone.query(EmployeeInfo).filter(EmployeeInfo.positionID == position).one_or_none()
+            if parent is None:
+                print('空')
+                break
+            if parent.job == '主管':
+                director.append(parent.name)
+            elif parent.job == '经理':
+                manager.append(parent.name)
+            elif parent.job == '总监':
+                majordomo.append(parent.name)
+            elif parent.job == '副总':
+                principal.append(parent.name)
+            parent = stone.query(Relation).filter(Relation.positionID == position).one_or_none()
+        if director:
+            one.director1 = director.pop()
+        if director:
+            one.director = director.pop()
+        if manager:
+            one.manager1 = manager.pop()
+        if manager:
+            one.manager = manager.pop()
+        if majordomo:
+            one.majordomo = majordomo.pop()
+        if principal:
+            one.general_manager = principal.pop()
+        if principal:
+            one.principal = principal.pop()
+    stone.commit()
     pass
 
 
@@ -96,20 +169,22 @@ def email_send(smtp_server, smtp_port, from_addr, from_addr_str, password, to_ad
 
 # 主程序
 def main():
-    # TODO 初始化数据库连接
-    # 初始化数据库中的4个基本表
+    #  初始化数据库连接
     stone = stoneobject()
+    # 初始化数据库中的4个基本表
     remove(stone)
+    # 数据提取
     create_table(stone)
     targettimestr = input('请输入定点时间，例如8:00')
     targettime = datetime.time(int(targettimestr.split(':')[0]), int(targettimestr.split(':')[1]))
     while True:
         if datetime.datetime.now().hour == targettime.hour:
+            date = datetime.date.today() + datetime.timedelta(days=0)
             # TODO 判断时间，如果时间为月末最后一天，调用unloading 存到 月转存表
-            unloading()
+            unloading(stone, today=date, afterday=3, number=7, table=WeekMapping)
             email_send()
             # TODO 判断时间，如果时间为周五，调用unloading 存到 周转存表
-            unloading()
+            unloading(stone, today=date, afterday=3, number=30, table=MonthMapping)
             email_send()
             # TODO 数据清理函数
             time.sleep(timer(targettime))

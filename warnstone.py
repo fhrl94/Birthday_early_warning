@@ -48,7 +48,7 @@ class Relation(Base):
         return self.name
 
 
-#  转存表（员工姓名、工号、出生日期、职位ID、职务、主管、主管1、经理、经理1、总监、部门第一负责人、总经理）），分周转存表、月转存表
+#  转存表（员工姓名、工号、出生日期、职位ID、职务（主管、主管1、经理、经理1、总监、部门第一负责人、总经理、董事长）），分周转存表、月转存表
 class WeekMapping(Base):
     # 表的名字:
     __tablename__ = 'WeekMapping'
@@ -59,7 +59,7 @@ class WeekMapping(Base):
     code = Column(String(10))
     birthDate = Column(Date())
     positionID = Column(String(36))
-    duty = Column(Integer())
+    job = Column(Integer())
     date = Column(Date())
     count = Column(Integer())
     director = Column(String(20))
@@ -73,6 +73,7 @@ class WeekMapping(Base):
     def __str__(self):
         return self.name
 
+
 class MonthMapping(Base):
     # 表的名字:
     __tablename__ = 'MonthMapping'
@@ -83,7 +84,7 @@ class MonthMapping(Base):
     code = Column(String(10))
     birthDate = Column(Date())
     positionID = Column(String(36))
-    duty = Column(Integer())
+    job = Column(Integer())
     date = Column(Date())
     count = Column(Integer())
     director = Column(String(20))
