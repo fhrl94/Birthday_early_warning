@@ -2,7 +2,7 @@
 import sqlite3
 
 import sys
-from sqlalchemy import Column, create_engine, Date, String, Integer
+from sqlalchemy import Column, create_engine, Date, String, Integer, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -29,6 +29,8 @@ class EmployeeInfo(Base):
     birthDate = Column(Date())
     positionID = Column(String(36))
     job = Column(Integer())
+    departmentname=Column(String(50))
+    IsPrimary = Column(Boolean())
 
     def __str__(self):
         return self.name
@@ -38,7 +40,7 @@ class EmployeeInfo(Base):
 class Relation(Base):
     # 表的名字:
     __tablename__ = 'Relation'
-    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    #  职位ID、上级职位ID
     # 表的结构:
     id = Column(Integer(), primary_key=True)
     positionID = Column(String(36))
@@ -48,16 +50,17 @@ class Relation(Base):
         return self.name
 
 
-#  转存表（员工姓名、工号、出生日期、职位ID、职务（主管、主管1、经理、经理1、总监、部门第一负责人、总经理、董事长）），分周转存表、月转存表
+#  转存表（员工姓名、工号、出生日期、部门名称、职位ID、职务（主管、主管1、经理、经理1、总监、部门第一负责人、总经理、董事长）），分周转存表、月转存表
 class WeekMapping(Base):
     # 表的名字:
     __tablename__ = 'WeekMapping'
-    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    #  职员表 姓名、工号、出生日期、部门名称、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
     # 表的结构:
     id = Column(Integer(), primary_key=True)
     name = Column(String(20))
     code = Column(String(10))
     birthDate = Column(Date())
+    departmentname=Column(String(50))
     positionID = Column(String(36))
     job = Column(Integer())
     date = Column(Date())
@@ -77,12 +80,13 @@ class WeekMapping(Base):
 class MonthMapping(Base):
     # 表的名字:
     __tablename__ = 'MonthMapping'
-    #  职员表 姓名、工号、出生日期、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
+    #  职员表 姓名、工号、出生日期、部门名称、职位唯一ID（涉及到sqlite支不支持UID），需要处理 职务的获取（存在兼职的情况）
     # 表的结构:
     id = Column(Integer(), primary_key=True)
     name = Column(String(20))
     code = Column(String(10))
     birthDate = Column(Date())
+    departmentname=Column(String(50))
     positionID = Column(String(36))
     job = Column(Integer())
     date = Column(Date())
